@@ -1,0 +1,4 @@
+replicaCount: 2
+image:
+  repository: "TwojLogin/MojaAplikacja" # Nazwa obrazu z DockerHuba
+  tag: "latest"
