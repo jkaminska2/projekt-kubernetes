@@ -44,19 +44,9 @@ jobs:
         run: |
           docker push ghcr.io/jkaminska2/tasks-worker:prod
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v4
-
-      - name: Configure kubeconfig
-        run: |
-          echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig
-          echo "KUBECONFIG=$PWD/kubeconfig" >> $GITHUB_ENV
-
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -k k8s/prod --validate=false
-
-      - name: Check rollout
-        run: |
-          kubectl rollout status deployment/prod-backend -n tasks-app --timeout=120s
-          kubectl rollout status deployment/prod-worker -n tasks-app --timeout=60s
+          echo "Deploy wykonywany lokalnie przez: kubectl apply -k k8s/prod"
+          echo "Obrazy dostępne w rejestrze:"
+          echo "  ghcr.io/jkaminska2/tasks-backend:prod"
+          echo "  ghcr.io/jkaminska2/tasks-worker:prod"
