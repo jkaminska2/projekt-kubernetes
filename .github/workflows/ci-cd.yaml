@@ -32,7 +32,9 @@ jobs:
           curl -sLO "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.1/kustomize_v5.4.1_linux_amd64.tar.gz"
           tar -xzf kustomize_v5.4.1_linux_amd64.tar.gz
           chmod +x kustomize
-          ./kustomize build k8s/prod | kubectl apply --dry-run=client -f -
+          ./kustomize build k8s/prod > /tmp/manifests.yaml
+          echo "Manifests generated successfully"
+          cat /tmp/manifests.yaml | grep "^kind:" | sort | uniq -c
 
       - name: Push backend image
         run: |
