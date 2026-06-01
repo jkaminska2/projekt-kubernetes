@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../base
+
+namePrefix: prod-
+
+images:
+  - name: ghcr.io/jkaminska2/tasks-backend
+    newTag: prod
+  - name: ghcr.io/jkaminska2/tasks-worker
+    newTag: prod
+patches:
+  - target:
+      kind: ConfigMap
+      name: app-config
+    path: patch-configmap.yaml

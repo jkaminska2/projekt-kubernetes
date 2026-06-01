@@ -1,0 +1,12 @@
+{
+  "name": "tasks-worker",
+  "version": "1.0.0",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.5",
+    "ioredis": "^5.4.1"
+  }
+}

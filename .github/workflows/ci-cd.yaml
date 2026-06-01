@@ -1,0 +1,52 @@
+name: CI/CD
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build backend image
+        run: |
+          docker build -t ghcr.io/jkaminska2/tasks-backend:prod ./app/backend
+
+      - name: Build worker image
+        run: |
+          docker build -t ghcr.io/jkaminska2/tasks-worker:prod ./app/worker
+
+      - name: Push backend image
+        run: |
+          docker push ghcr.io/jkaminska2/tasks-backend:prod
+
+      - name: Push worker image
+        run: |
+          docker push ghcr.io/jkaminska2/tasks-worker:prod
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig
+          echo "KUBECONFIG=$PWD/kubeconfig" >> $GITHUB_ENV
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -k k8s/prod
+
+      - name: Check rollout
+        run: |
+          kubectl rollout status deployment/prod-backend -n tasks-app
