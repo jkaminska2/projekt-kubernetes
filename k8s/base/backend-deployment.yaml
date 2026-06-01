@@ -40,9 +40,17 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
-            - secretRef:
-                name: db-secret
           env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: db-user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: db-password
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
@@ -54,7 +62,10 @@ spec:
             - |
               echo "Waiting for PostgreSQL..."
               until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; do sleep 2; done
-              psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "CREATE TABLE IF NOT EXISTS tasks (id SERIAL PRIMARY KEY, title TEXT NOT NULL);"
+              psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
+                -c "CREATE TABLE IF NOT EXISTS tasks (id SERIAL PRIMARY KEY, title TEXT NOT NULL);"
+          securityContext:
+            allowPrivilegeEscalation: false
       containers:
         - name: backend
           image: ghcr.io/jkaminska2/tasks-backend:latest
@@ -63,8 +74,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: app-config
-            - secretRef:
-                name: db-secret
           env:
             - name: DB_USER
               valueFrom:
@@ -95,3 +104,7 @@ spec:
             limits:
               cpu: "500m"
               memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true

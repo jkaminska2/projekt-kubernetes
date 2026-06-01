@@ -3,8 +3,6 @@ kind: Ingress
 metadata:
   name: backend-ingress
   namespace: tasks-app
-  annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
@@ -15,6 +13,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: backend
+                name: prod-backend
                 port:
                   number: 80

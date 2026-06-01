@@ -18,8 +18,27 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       initContainers:
-        - name: wait-for-db-and-redis
+        - name: wait-for-postgres
           image: postgres:16
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: db-user
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL..."
+              until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; do sleep 2; done
+          securityContext:
+            allowPrivilegeEscalation: false
+        - name: wait-for-redis
+          image: redis:7-alpine
           envFrom:
             - configMapRef:
                 name: app-config
@@ -27,18 +46,16 @@ spec:
             - sh
             - -c
             - |
-              echo "Waiting for PostgreSQL..."
-              until pg_isready -h "$DB_HOST" -p $DB_PORT; do sleep 2; done
               echo "Waiting for Redis..."
-              until nc -z "$REDIS_HOST" "$REDIS_PORT"; do sleep 2; done
+              until redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" ping | grep -q PONG; do sleep 2; done
+          securityContext:
+            allowPrivilegeEscalation: false
       containers:
         - name: worker
           image: ghcr.io/jkaminska2/tasks-worker:latest
           envFrom:
             - configMapRef:
                 name: app-config
-            - secretRef:
-                name: db-secret
           env:
             - name: DB_USER
               valueFrom:
@@ -73,3 +90,6 @@ spec:
             limits:
               cpu: "200m"
               memory: "128Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true

@@ -16,3 +16,7 @@ patches:
       kind: ConfigMap
       name: app-config
     path: patch-configmap.yaml
+  - target:
+      kind: Ingress
+      name: backend-ingress
+    path: patch-ingress.yaml

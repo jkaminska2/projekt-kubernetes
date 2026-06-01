@@ -27,6 +27,13 @@ jobs:
         run: |
           docker build -t ghcr.io/jkaminska2/tasks-worker:prod ./app/worker
 
+      - name: Validate Kubernetes manifests
+        run: |
+          curl -sLO "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.1/kustomize_v5.4.1_linux_amd64.tar.gz"
+          tar -xzf kustomize_v5.4.1_linux_amd64.tar.gz
+          chmod +x kustomize
+          ./kustomize build k8s/prod | kubectl apply --dry-run=client -f -
+
       - name: Push backend image
         run: |
           docker push ghcr.io/jkaminska2/tasks-backend:prod
@@ -49,4 +56,5 @@ jobs:
 
       - name: Check rollout
         run: |
-          kubectl rollout status deployment/prod-backend -n tasks-app
+          kubectl rollout status deployment/prod-backend -n tasks-app --timeout=120s
+          kubectl rollout status deployment/prod-worker -n tasks-app --timeout=60s

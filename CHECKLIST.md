@@ -62,7 +62,7 @@ W pliku /etc/hosts dodaj:
 ### 5.1 Healthcheck backendu
 
 ```bash
-curl http://tasks.local/health
+curl http://localhost:8000/health
 ```
 
 Oczekiwany wynik:
@@ -74,7 +74,7 @@ Oczekiwany wynik:
 ### 5.2 Dodanie zadania
 
 ```bash
-curl -X POST http://tasks.local/tasks \
+curl -X POST http://localhost:8000/tasks \
   -H "Content-Type: application/json" \
   -d '{"title":"moje pierwsze zadanie"}'
 ```
@@ -88,7 +88,7 @@ Oczekiwany wynik
 ### 5.3 Pobieranie listy zadań
 
 ```bash
-curl http://tasks.local/tasks
+curl http://localhost:8080/tasks
 ```
 
 Oczekiwany wynik:
@@ -118,14 +118,14 @@ Backend wysłał wiadomość do Redis, worker ją odebrał i działa poprawnie.
 1. Dodaj zadanie:
 
 ```bash
-curl -X POST http://tasks.local/tasks \
+curl -X POST http://localhost:8080/tasks \
   -H "Content-Type: application/json" \
   -d '{"title":"zadanie trwałe"}'
 ```
 2. Usuń pod bazy:
 
 ```bash
-kubectl delete pod postgres-0 -n tasks-app
+kubectl delete pod prod-postgres-0 -n tasks-app
 ```
 
 3. Poczekaj aż pod się odtworzy:
@@ -137,7 +137,7 @@ kubectl get pods -n tasks-app
 4. Sprawdź dane:
 
 ```bash
-curl http://tasks.local/tasks
+curl http://localhost:8080/tasks
 ```
 
 ### 8. Rolling update backendu
