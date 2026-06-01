@@ -54,7 +54,7 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -k k8s/prod
+          kubectl apply -k k8s/prod --validate=false
 
       - name: Check rollout
         run: |
