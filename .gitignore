@@ -11,6 +11,8 @@ logs/
 # Environment
 .env
 
+actions-runner/
+
 # Docker
 *.tar
 

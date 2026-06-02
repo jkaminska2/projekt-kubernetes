@@ -5,7 +5,7 @@ on:
     branches: ["main"]
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -44,9 +44,19 @@ jobs:
         run: |
           docker push ghcr.io/jkaminska2/tasks-worker:prod
 
+  deploy:
+    runs-on: self-hosted
+    needs: build-and-push
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Deploy to Kubernetes
         run: |
-          echo "Deploy wykonywany lokalnie przez: kubectl apply -k k8s/prod"
-          echo "Obrazy dostępne w rejestrze:"
-          echo "  ghcr.io/jkaminska2/tasks-backend:prod"
-          echo "  ghcr.io/jkaminska2/tasks-worker:prod"
+          kubectl apply -k k8s/prod
+
+      - name: Check rollout
+        run: |
+          kubectl rollout status deployment/prod-backend -n tasks-app --timeout=120s
+          kubectl rollout status deployment/prod-worker -n tasks-app --timeout=60s
