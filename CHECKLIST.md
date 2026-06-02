@@ -39,7 +39,7 @@ kubectl get pods -n ingress-nginx
 kubectl apply -k k8s/prod
 ```
 
-Poczekaj ~60 sekund na pobranie obrazów, potem sprawdź:
+Poczekaj na pobranie obrazów, potem sprawdź:
 ```bash
 kubectl get pods -n tasks-app
 kubectl get svc -n tasks-app
@@ -142,7 +142,7 @@ curl -X POST http://localhost:8080/tasks \
 kubectl delete pod prod-postgres-0 -n tasks-app
 ```
 
-3. Poczekaj aż pod się odtworzy (~30 sekund):
+3. Poczekaj aż pod się odtworzy:
 ```bash
 kubectl get pods -n tasks-app
 ```
@@ -210,7 +210,7 @@ prod-backend-pdb   1               N/A               1                     70m
 
 Link do workflow:
 ```
-https://github.com/jkaminska2/projekt-kubernetes/actions/runs/26790132652
+https://github.com/jkaminska2/projekt-kubernetes/actions/runs/26791263704
 ```
 
 Pipeline wykonuje:
@@ -251,3 +251,4 @@ Oczekiwany wynik:
   "prometheus.io/port": "8000",
   "prometheus.io/scrape": "true"
 }
+```
