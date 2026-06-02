@@ -51,11 +51,17 @@ kubectl get pdb -n tasks-app
 Oczekiwany wynik `get pods`:
 ```
 NAME                            READY   STATUS    RESTARTS   AGE
-prod-backend-xxx                1/1     Running   0          2m
-prod-backend-yyy                1/1     Running   0          2m
+prod-backend-6b6bbd5bb6-9gb95   1/1     Running   0          2m
+prod-backend-6b6bbd5bb6-p7pfn   1/1     Running   0          2m
 prod-postgres-0                 1/1     Running   0          2m
-prod-redis-xxx                  1/1     Running   0          2m
-prod-worker-xxx                 1/1     Running   0          2m
+prod-redis-cd97bf494-pfbhb      1/1     Running   0          2m
+prod-worker-75f64d56db-6lwzd    1/1     Running   0          2m
+```
+
+Oczekiwany wynik `get pvc`:
+```
+NAME                            STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+postgres-data-prod-postgres-0   Bound    pvc-86f9054a-2391-4ae9-b000-860243937b5f   1Gi        RWO            local-path     2m
 ```
 
 ## 4. Udostępnienie aplikacji przez port-forward
@@ -113,8 +119,11 @@ Worker loguje każde zadanie pobrane z kolejki Redis:
 kubectl logs deployment/prod-worker -n tasks-app
 ```
 
-Oczekiwany log:
+Oczekiwany wynik:
 ```
+> tasks-worker@1.0.0 start
+> node worker.js
+
 Worker started, waiting for tasks...
 Worker got message: NEW_TASK:1:moje pierwsze zadanie
 ```
@@ -125,7 +134,7 @@ Worker got message: NEW_TASK:1:moje pierwsze zadanie
 ```bash
 curl -X POST http://localhost:8080/tasks \
   -H "Content-Type: application/json" \
-  -d '{"title":"zadanie trwale"}'
+  -d '{"title":"moje pierwsze zadanie"}'
 ```
 
 2. Usuń pod bazy:
@@ -138,7 +147,7 @@ kubectl delete pod prod-postgres-0 -n tasks-app
 kubectl get pods -n tasks-app
 ```
 
-4. Wznów port-forward (po restarcie poda może być potrzebne):
+4. Wznów port-forward:
 ```bash
 kubectl port-forward svc/prod-backend 8080:80 -n tasks-app
 ```
@@ -148,7 +157,10 @@ kubectl port-forward svc/prod-backend 8080:80 -n tasks-app
 curl http://localhost:8080/tasks
 ```
 
-Oczekiwany wynik — zadanie nadal istnieje mimo restartu poda bazy.
+Oczekiwany wynik — wszystkie zadania nadal istnieją mimo restartu poda bazy:
+```json
+{"tasks":[{"id":1,"title":"moje pierwsze zadanie"},{"id":2,"title":"moje pierwsze zadanie"},{"id":3,"title":"moje pierwsze zadanie"},{"id":4,"title":"moje pierwsze zadanie"},{"id":5,"title":"moje pierwsze zadanie"}]}
+```
 
 ## 8. Rolling update backendu
 
@@ -191,7 +203,7 @@ kubectl get pdb -n tasks-app
 Oczekiwany wynik:
 ```
 NAME               MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
-prod-backend-pdb   1               N/A               1                     5m
+prod-backend-pdb   1               N/A               1                     70m
 ```
 
 ## 11. CI/CD - ostatni udany workflow
@@ -202,10 +214,40 @@ https://github.com/jkaminska2/projekt-kubernetes/actions
 ```
 
 Pipeline wykonuje:
-- build obrazu backend
-- build obrazu worker
+- build obrazu backend i worker
 - walidacja manifestów przez `kustomize build`
-- push obrazów do GHCR
-- `kubectl apply -k k8s/prod`
-- `kubectl rollout status deployment/prod-backend`
-- `kubectl rollout status deployment/prod-worker`
+- push obrazów do GHCR (`ghcr.io/jkaminska2/tasks-backend:prod`, `ghcr.io/jkaminska2/tasks-worker:prod`)
+- deploy wykonywany lokalnie: `kubectl apply -k k8s/prod`
+
+## 12. Obserwowalność - metryki Prometheusa
+
+Backend udostępnia endpoint `/metrics` z metrykami w formacie Prometheus:
+
+```bash
+kubectl port-forward svc/prod-backend 8080:80 -n tasks-app
+curl http://localhost:8080/metrics
+```
+
+Oczekiwany wynik (fragment):
+```
+# HELP tasks_created_total Liczba utworzonych zadań
+# TYPE tasks_created_total counter
+tasks_created_total 1
+# HELP http_requests_total Liczba zapytań HTTP
+# TYPE http_requests_total counter
+http_requests_total{method="POST",path="/tasks",status="201"} 1
+http_requests_total{method="GET",path="/tasks",status="200"} 1
+```
+
+Adnotacje Prometheusa na podach backendu:
+```bash
+kubectl get pod -n tasks-app -l app=backend -o jsonpath='{.items[0].metadata.annotations}' | jq .
+```
+
+Oczekiwany wynik:
+```json
+{
+  "prometheus.io/path": "/metrics",
+  "prometheus.io/port": "8000",
+  "prometheus.io/scrape": "true"
+}

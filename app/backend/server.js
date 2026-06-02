@@ -1,6 +1,7 @@
 const express = require("express");
 const { Pool } = require("pg");
 const Redis = require("ioredis");
+const client = require("prom-client");
 
 const DB_HOST = process.env.DB_HOST || "postgres";
 const DB_PORT = parseInt(process.env.DB_PORT || "5432", 10);
@@ -24,11 +25,50 @@ const redis = new Redis({
   port: REDIS_PORT
 });
 
+// Metryki Prometheus
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
+
+const tasksCreatedTotal = new client.Counter({
+  name: "tasks_created_total",
+  help: "Liczba utworzonych zadań",
+  registers: [register]
+});
+
+const httpRequestsTotal = new client.Counter({
+  name: "http_requests_total",
+  help: "Liczba zapytań HTTP",
+  labelNames: ["method", "path", "status"],
+  registers: [register]
+});
+
+const httpRequestDuration = new client.Histogram({
+  name: "http_request_duration_seconds",
+  help: "Czas trwania zapytań HTTP",
+  labelNames: ["method", "path"],
+  registers: [register]
+});
+
 const app = express();
 app.use(express.json());
 
+// Middleware do zliczania zapytań
+app.use((req, res, next) => {
+  const end = httpRequestDuration.startTimer({ method: req.method, path: req.path });
+  res.on("finish", () => {
+    httpRequestsTotal.inc({ method: req.method, path: req.path, status: res.statusCode });
+    end();
+  });
+  next();
+});
+
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
+});
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", register.contentType);
+  res.end(await register.metrics());
 });
 
 app.post("/tasks", async (req, res) => {
@@ -45,6 +85,7 @@ app.post("/tasks", async (req, res) => {
     const id = result.rows[0].id;
 
     await redis.lpush("tasks_queue", `NEW_TASK:${id}:${title}`);
+    tasksCreatedTotal.inc();
 
     res.status(201).json({ id, title });
   } catch (err) {
