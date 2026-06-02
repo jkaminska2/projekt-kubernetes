@@ -210,7 +210,7 @@ prod-backend-pdb   1               N/A               1                     70m
 
 Link do workflow:
 ```
-https://github.com/jkaminska2/projekt-kubernetes/actions
+https://github.com/jkaminska2/projekt-kubernetes/actions/runs/26790132652
 ```
 
 Pipeline wykonuje:
