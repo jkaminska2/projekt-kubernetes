@@ -25,7 +25,6 @@ const redis = new Redis({
   port: REDIS_PORT
 });
 
-// Metryki Prometheus
 const register = new client.Registry();
 client.collectDefaultMetrics({ register });
 
@@ -52,7 +51,6 @@ const httpRequestDuration = new client.Histogram({
 const app = express();
 app.use(express.json());
 
-// Middleware do zliczania zapytań
 app.use((req, res, next) => {
   const end = httpRequestDuration.startTimer({ method: req.method, path: req.path });
   res.on("finish", () => {
